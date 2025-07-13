@@ -1,0 +1,177 @@
+{
+  "nodes": [
+    {
+      "parameters": {},
+      "name": "Start",
+      "type": "n8n-nodes-base.start",
+      "typeVersion": 1,
+      "position": [200, 300]
+    },
+    {
+      "parameters": {
+        "model": "gpt-3.5-turbo",
+        "prompt": "Crie um roteiro envolvente para um vídeo de 90 segundos apresentando o curso 'Robôs de Investimento para Crianças'. Inclua introdução cativante, público-alvo, objetivos, diferenciais e chamada para ação."
+      },
+      "name": "OpenAI - Gera Roteiro",
+      "type": "n8n-nodes-base.openAi",
+      "typeVersion": 1,
+      "credentials": {
+        "openAiApi": "SUA_CREDENCIAL_AQUI"
+      },
+      "position": [400, 250]
+    },
+    {
+      "parameters": {
+        "model": "gpt-3.5-turbo",
+        "prompt": "Com base no tema do curso, crie uma descrição detalhada e atrativa para página de inscrição."
+      },
+      "name": "OpenAI - Gera Descrição",
+      "type": "n8n-nodes-base.openAi",
+      "typeVersion": 1,
+      "credentials": {
+        "openAiApi": "SUA_CREDENCIAL_AQUI"
+      },
+      "position": [600, 250]
+    },
+    {
+      "parameters": {
+        "url": "https://api.synthesia.io/v1/videos ",
+        "requestMethod": "POST",
+        "bodyParameters": {
+          "script": "={{ $json[\"content\"] }}",
+          "avatar": "anna",
+          "background": "office"
+        },
+        "headers": {
+          "Authorization": "Seu-Token-Aqui"
+        }
+      },
+      "name": "Synthesia - Cria Vídeo",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [800, 250]
+    },
+    {
+      "parameters": {
+        "fileData": "={{ $json[\"videoUrl\"] }}",
+        "fileName": "video-curso.mp4",
+        "folderId": "ID_DA_PASTA_NO_GOOGLE_DRIVE"
+      },
+      "name": "Google Drive - Salva Vídeo",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 1,
+      "credentials": {
+        "googleDriveOAuth2": "SUA_CREDENCIAL_AQUI"
+      },
+      "position": [1000, 250]
+    },
+    {
+      "parameters": {
+        "to": "seu-email@example.com",
+        "subject": "Curso Finalizado: Novo Vídeo Pronto!",
+        "text": "O vídeo do curso foi criado com sucesso! Link: {{ $json[\"videoUrl\"] }}"
+      },
+      "name": "E-mail - Notificação",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 1,
+      "credentials": {
+        "smtp": "SUA_CREDENCIAL_SMTP"
+      },
+      "position": [1200, 250]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json[\"validarRoteiro\"] }}",
+              "operation": "equal",
+              "value2": "true"
+            }
+          ]
+        }
+      },
+      "name": "Decision - Aprovado?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [600, 400]
+    }
+  ],
+  "connections": {
+    "Start": {
+      "main": [
+        [
+          {
+            "node": "OpenAI - Gera Roteiro",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI - Gera Roteiro": {
+      "main": [
+        [
+          {
+            "node": "Decision - Aprovado?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Decision - Aprovado?": {
+      "main": [
+        [
+          {
+            "node": "OpenAI - Gera Descrição",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ],
+      "noData": [
+        [
+          {
+            "node": "OpenAI - Gera Roteiro",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI - Gera Descrição": {
+      "main": [
+        [
+          {
+            "node": "Synthesia - Cria Vídeo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Synthesia - Cria Vídeo": {
+      "main": [
+        [
+          {
+            "node": "Google Drive - Salva Vídeo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Drive - Salva Vídeo": {
+      "main": [
+        [
+          {
+            "node": "E-mail - Notificação",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}
